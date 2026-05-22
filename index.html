@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>护理工具中心 — 医疗健康小助手</title>
+  <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #faf6f3 0%, #f5ede5 100%);
+      color: #2d2d2d;
+      perspective: 1200px;
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 80px 20px 60px;
+      background: linear-gradient(135deg, #e8b4cc 0%, #dfa0c0 100%);
+      color: white;
+    }
+    .hero .badge {
+      display: inline-block;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: #fff;
+      background: rgba(255,255,255,0.2);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      padding: 8px 12px;
+      border-radius: 20px;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 16px;
+      color: #fff;
+    }
+    .hero .date {
+      font-size: 1rem;
+      color: rgba(255,255,255,0.85);
+      margin-bottom: 28px;
+    }
+    .hero .author {
+      display: inline-block;
+      background: rgba(255,255,255,0.15);
+      border-radius: 20px;
+      padding: 6px 20px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+
+    /* Cards Container */
+    .cards {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 60px 28px 100px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 40px;
+      align-items: start;
+    }
+
+    /* Card Link */
+    .card-link {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+      perspective: 1000px;
+    }
+
+    /* Card 3D Effect */
+    .card {
+      background: linear-gradient(135deg, #fff9fb 0%, #fff2f8 100%);
+      border-radius: 24px;
+      padding: 40px 32px;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(232, 180, 204, 0.15);
+      border: 2px solid rgba(232, 180, 204, 0.1);
+      transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
+      transform-style: preserve-3d;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Card shine/glow effect */
+    .card::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    /* Card hover: lift and rotate */
+    .card-link:hover .card {
+      transform: translateY(-16px) rotateX(8deg) rotateY(-4deg);
+      box-shadow: 0 24px 48px rgba(232, 180, 204, 0.25), 0 0 40px rgba(223, 160, 192, 0.15);
+    }
+
+    .card-link:hover .card::before {
+      opacity: 1;
+    }
+
+    .card-icon {
+      font-size: 4rem;
+      margin-bottom: 16px;
+      display: inline-block;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-12px); }
+    }
+
+    .card-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+      color: #d47fa0;
+      font-family: 'Patrick Hand', 'Nunito', -apple-system;
+    }
+
+    .card-desc {
+      font-size: 1rem;
+      color: #6e6e73;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .card-cta {
+      display: inline-block;
+      background: linear-gradient(135deg, #e8b4cc 0%, #dfa0c0 100%);
+      color: white;
+      padding: 10px 24px;
+      border-radius: 20px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-top: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .card-link:hover .card-cta {
+      transform: scale(1.08);
+      box-shadow: 0 6px 20px rgba(232, 180, 204, 0.3);
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 40px 20px;
+      font-size: 0.95rem;
+      color: #9b9b9b;
+    }
+    footer a { color: #dfa0c0; text-decoration: none; transition: color 0.2s; }
+    footer a:hover { color: #d47fa0; }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="badge">💝 Healthcare Nursing Tools</div>
+  <h1>💕 护理工具中心 💕<br>Medical & Nursing Suite</h1>
+  <div class="date">为医疗专业人士设计 — Designed for Healthcare Professionals</div>
+  <div class="author">Healthcare Team - Ning</div>
+</div>
+
+<div class="cards">
+
+  <!-- 1. 患者体温监测 -->
+  <a class="card-link" href="temperature_converter.html">
+    <div class="card">
+      <div class="card-icon">🌡️</div>
+      <div class="card-title">患者体温转换</div>
+      <div class="card-desc">摄氏度与华氏度双向转换，成人与小孩体温数据转换，自动识别危险体温。</div>
+      <div class="card-cta">立即使用 →</div>
+    </div>
+  </a>
+
+  <!-- 2. 患者信息登记 -->
+  <a class="card-link" href="greeting.html">
+    <div class="card">
+      <div class="card-icon">📋</div>
+      <div class="card-title">患者档案管理</div>
+      <div class="card-desc">快速记录患者基本信息和分类，以及最贴心的个性化问候。</div>
+      <div class="card-cta">立即使用 →</div>
+    </div>
+  </a>
+
+  <!-- 3. 护士班次工资计算 -->
+  <a class="card-link" href="tip_calculator.html">
+    <div class="card">
+      <div class="card-icon">👩‍⚕️</div>
+      <div class="card-title">班次薪酬计算</div>
+      <div class="card-desc">日班、夜班、加班费率一键计算。</div>
+      <div class="card-cta">立即使用 →</div>
+    </div>
+  </a>
+
+  <!-- 4. 药物剂量计算 -->
+  <a class="card-link" href="password_generator.html">
+    <div class="card">
+      <div class="card-icon">💊</div>
+      <div class="card-title">药物剂量计算</div>
+      <div class="card-desc">根据体重计算安全给药剂量。</div>
+      <div class="card-cta">立即使用 →</div>
+    </div>
+  </a>
+
+  <!-- 5. 患者健康评估 -->
+  <a class="card-link" href="bmi_calculator.html">
+    <div class="card">
+      <div class="card-icon">❤️</div>
+      <div class="card-title">健康评估系统</div>
+      <div class="card-desc">BMI 计算与健康状况分级。</div>
+      <div class="card-cta">立即使用 →</div>
+    </div>
+  </a>
+
+</div>
+
+<footer>
+  Made by Nursing Team - Ning &nbsp;·&nbsp;
+  <a href="https://github.com/seabuilder/claude-camp-w1-练习" target="_blank">GitHub 仓库</a>
+  &nbsp;·&nbsp; Healthcare Professional Tools
+</footer>
+
+</body>
+</html>

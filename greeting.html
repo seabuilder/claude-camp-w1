@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>患者档案管理 — 护理工具中心</title>
+  <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #faf6f3 0%, #f5ede5 100%);
+      min-height: 100vh;
+      color: #2d2d2d;
+    }
+
+    /* Nav */
+    .nav {
+      padding: 16px 28px;
+      background: linear-gradient(135deg, #e8b4cc 0%, #dfa0c0 100%);
+    }
+    .nav a { color: rgba(255,255,255,0.9); text-decoration: none; font-size: 0.92rem; font-weight: 600; }
+    .nav a:hover { color: #fff; }
+
+    /* Page header */
+    .page-header { text-align: center; padding: 40px 20px 28px; }
+    .page-header .icon { font-size: 3rem; margin-bottom: 10px; }
+    .page-header h1 {
+      font-size: 2rem; font-weight: 800; color: #d47fa0;
+      font-family: 'Patrick Hand', 'Nunito', sans-serif; margin-bottom: 6px;
+    }
+    .page-header p { font-size: 0.97rem; color: #6e6e73; }
+
+    /* Main layout */
+    .main { max-width: 860px; margin: 0 auto; padding: 0 20px 80px; }
+
+    /* Section card */
+    .section-card {
+      background: #fff;
+      border-radius: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 20px rgba(232,180,204,0.12);
+      border: 2px solid rgba(232,180,204,0.12);
+      overflow: hidden;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 28px;
+      background: linear-gradient(135deg, #fff9fb, #fff2f8);
+      border-bottom: 2px solid rgba(232,180,204,0.15);
+      cursor: pointer;
+      user-select: none;
+    }
+    .section-header .s-icon { font-size: 1.4rem; }
+    .section-header .s-title {
+      font-size: 1.05rem; font-weight: 700; color: #d47fa0;
+      font-family: 'Patrick Hand', 'Nunito', sans-serif;
+    }
+    .section-header .s-subtitle { font-size: 0.82rem; color: #9b9b9b; margin-left: auto; margin-right: 8px; }
+    .section-header .chevron { color: #dfa0c0; font-size: 0.9rem; transition: transform 0.25s; }
+    .section-card.collapsed .chevron { transform: rotate(-90deg); }
+    .section-body { padding: 24px 28px; }
+    .section-card.collapsed .section-body { display: none; }
+
+    /* Grid */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    @media (max-width: 600px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+    .span-2 { grid-column: span 2; }
+    @media (max-width: 600px) { .span-2 { grid-column: span 1; } }
+
+    /* Form elements */
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    label { font-size: 0.83rem; font-weight: 700; color: #9b7e8e; text-transform: uppercase; letter-spacing: 0.05em; }
+    input, select, textarea {
+      padding: 11px 14px;
+      border: 2px solid rgba(232,180,204,0.35);
+      border-radius: 12px;
+      font-size: 0.97rem;
+      color: #2d2d2d;
+      background: #fff;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      font-family: inherit;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #dfa0c0;
+      box-shadow: 0 0 0 3px rgba(223,160,192,0.12);
+    }
+    textarea { resize: vertical; min-height: 80px; }
+    select { cursor: pointer; }
+
+    /* Sub-section (for NOK) */
+    .sub-section {
+      border: 2px dashed rgba(232,180,204,0.4);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 16px;
+      background: rgba(255,249,251,0.6);
+    }
+    .sub-section:last-child { margin-bottom: 0; }
+    .sub-label {
+      font-size: 0.85rem; font-weight: 700; color: #d47fa0;
+      margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+    }
+
+    /* Generate button */
+    .generate-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #e8b4cc 0%, #dfa0c0 100%);
+      color: #fff;
+      border: none;
+      border-radius: 16px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s;
+      margin-top: 8px;
+      font-family: inherit;
+    }
+    .generate-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(232,180,204,0.4);
+    }
+
+    /* Result card */
+    .result-card {
+      display: none;
+      background: linear-gradient(135deg, #fff9fb, #fff2f8);
+      border-radius: 20px;
+      margin-top: 24px;
+      border: 2px solid rgba(232,180,204,0.25);
+      overflow: hidden;
+      animation: slideIn 0.4s ease;
+    }
+    .result-card.show { display: block; }
+    @keyframes slideIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+    .result-header {
+      background: linear-gradient(135deg, #e8b4cc, #dfa0c0);
+      padding: 20px 28px;
+      color: #fff;
+    }
+    .result-header .patient-name { font-size: 1.6rem; font-weight: 800; margin-bottom: 2px; }
+    .result-header .patient-meta { font-size: 0.9rem; opacity: 0.85; }
+
+    /* Greeting box */
+    .greeting-box {
+      margin: 24px 28px 0;
+      padding: 20px 24px;
+      background: #fff;
+      border-radius: 14px;
+      border-left: 4px solid #dfa0c0;
+    }
+    .greeting-label { font-size: 0.78rem; font-weight: 700; color: #dfa0c0; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+    .greeting-text { font-size: 1.05rem; line-height: 1.7; color: #2d2d2d; font-style: italic; }
+
+    /* Result sections */
+    .result-sections { padding: 20px 28px 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 600px) { .result-sections { grid-template-columns: 1fr; } }
+    .r-block { background: #fff; border-radius: 14px; padding: 16px; border: 1px solid rgba(232,180,204,0.2); }
+    .r-block.wide { grid-column: span 2; }
+    @media (max-width: 600px) { .r-block.wide { grid-column: span 1; } }
+    .r-block-title { font-size: 0.78rem; font-weight: 700; color: #dfa0c0; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
+    .r-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(232,180,204,0.1); font-size: 0.92rem; }
+    .r-row:last-child { border-bottom: none; }
+    .r-key { color: #9b7e8e; }
+    .r-val { font-weight: 600; color: #2d2d2d; text-align: right; max-width: 60%; }
+
+    /* Print button */
+    .print-btn {
+      margin: 0 28px 28px;
+      padding: 11px 24px;
+      background: transparent;
+      border: 2px solid rgba(232,180,204,0.5);
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #d47fa0;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .print-btn:hover { background: rgba(232,180,204,0.1); }
+
+    @media print {
+      .nav, .page-header, .section-card, .generate-btn, .print-btn { display: none !important; }
+      .result-card { display: block !important; box-shadow: none; border: 1px solid #ccc; }
+      body { background: #fff; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="index.html">← 返回护理工具中心</a>
+</div>
+
+<div class="page-header">
+  <div class="icon">📋</div>
+  <h1>患者档案管理</h1>
+  <p>完整记录患者基本资料、医疗背景及联系人信息，以及最贴心的个性化问候</p>
+</div>
+
+<div class="main">
+
+  <!-- 1. 基本信息 -->
+  <div class="section-card" id="sec1">
+    <div class="section-header" onclick="toggleSection('sec1')">
+      <span class="s-icon">👤</span>
+      <span class="s-title">基本信息 — Basic Information</span>
+      <span class="s-subtitle">必填</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="grid-2">
+        <div class="field"><label>姓名 Full Name *</label><input id="name" type="text" placeholder="e.g. Sarah Chen" /></div>
+        <div class="field"><label>年龄 Age *</label><input id="age" type="number" min="0" max="130" placeholder="e.g. 45" /></div>
+        <div class="field">
+          <label>性别 Gender *</label>
+          <select id="gender">
+            <option value="">— 请选择 —</option>
+            <option value="female">Female 女</option>
+            <option value="male">Male 男</option>
+            <option value="other">Non-binary / Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>母语 Primary Language *</label>
+          <select id="language">
+            <option value="english">English</option>
+            <option value="mandarin">普通话 Mandarin</option>
+            <option value="cantonese">粤语 Cantonese</option>
+            <option value="arabic">Arabic 阿拉伯语</option>
+            <option value="spanish">Spanish 西班牙语</option>
+            <option value="hindi">Hindi 印地语</option>
+            <option value="vietnamese">Vietnamese 越南语</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>宗教信仰 Religion</label>
+          <select id="religion">
+            <option value="none">Not specified / None</option>
+            <option value="christian">Christian 基督教</option>
+            <option value="catholic">Catholic 天主教</option>
+            <option value="muslim">Muslim / Islam 伊斯兰教</option>
+            <option value="buddhist">Buddhist 佛教</option>
+            <option value="hindu">Hindu 印度教</option>
+            <option value="jewish">Jewish 犹太教</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="field"><label>联系电话 Phone</label><input id="phone" type="tel" placeholder="e.g. 0412 345 678" /></div>
+        <div class="field span-2"><label>Email 邮箱</label><input id="email" type="email" placeholder="e.g. sarah@email.com" /></div>
+        <div class="field span-2"><label>家庭住址 Home Address</label><input id="address" type="text" placeholder="e.g. 12 Rose St, Melbourne VIC 3000" /></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 医疗背景 -->
+  <div class="section-card" id="sec2">
+    <div class="section-header" onclick="toggleSection('sec2')">
+      <span class="s-icon">🏥</span>
+      <span class="s-title">医疗背景 — Medical Background</span>
+      <span class="s-subtitle">重要</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="grid-2">
+        <div class="field span-2">
+          <label>既往病史 Past Medical History (PMH)</label>
+          <textarea id="pmh" placeholder="e.g. Type 2 Diabetes, Hypertension, Asthma (diagnosed 2018)..."></textarea>
+        </div>
+        <div class="field">
+          <label>最后一次问诊 Last Visit Date</label>
+          <input id="lastVisit" type="date" />
+        </div>
+        <div class="field">
+          <label>下次预约 Next Appointment</label>
+          <input id="nextVisit" type="date" />
+        </div>
+        <div class="field span-2">
+          <label>当前用药 Current Medications</label>
+          <textarea id="medications" placeholder="e.g. Metformin 500mg BD, Lisinopril 10mg OD..." style="min-height:64px;"></textarea>
+        </div>
+        <div class="field span-2">
+          <label>过敏史 Known Allergies</label>
+          <input id="allergies" type="text" placeholder="e.g. Penicillin, Shellfish — or NKDA (No Known Drug Allergies)" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 联系人信息 -->
+  <div class="section-card" id="sec3">
+    <div class="section-header" onclick="toggleSection('sec3')">
+      <span class="s-icon">📞</span>
+      <span class="s-title">联系人信息 — Primary Contact</span>
+      <span class="s-subtitle">可选</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="grid-2">
+        <div class="field"><label>联系人姓名 Contact Name</label><input id="contactName" type="text" placeholder="e.g. James Chen" /></div>
+        <div class="field"><label>关系 Relationship</label><input id="contactRel" type="text" placeholder="e.g. Spouse, Parent" /></div>
+        <div class="field"><label>电话 Phone</label><input id="contactPhone" type="tel" placeholder="e.g. 0400 123 456" /></div>
+        <div class="field"><label>Email</label><input id="contactEmail" type="email" placeholder="e.g. james@email.com" /></div>
+        <div class="field span-2"><label>住址 Address</label><input id="contactAddress" type="text" placeholder="Same as patient / or enter address" /></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 紧急联系人 -->
+  <div class="section-card" id="sec4">
+    <div class="section-header" onclick="toggleSection('sec4')">
+      <span class="s-icon">🚨</span>
+      <span class="s-title">紧急联系人 — Emergency / Next of Kin</span>
+      <span class="s-subtitle">重要</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+
+      <!-- First NOK -->
+      <div class="sub-section">
+        <div class="sub-label">👨‍👩‍👧 First Next of Kin（第一亲属联系人）</div>
+        <div class="grid-2">
+          <div class="field"><label>姓名 Name</label><input id="nok1Name" type="text" placeholder="e.g. Michael Chen" /></div>
+          <div class="field"><label>关系 Relationship</label><input id="nok1Rel" type="text" placeholder="e.g. Son, Daughter" /></div>
+          <div class="field"><label>电话 Phone</label><input id="nok1Phone" type="tel" placeholder="e.g. 0411 222 333" /></div>
+          <div class="field"><label>Email</label><input id="nok1Email" type="email" placeholder="e.g. michael@email.com" /></div>
+          <div class="field span-2"><label>住址 Address</label><input id="nok1Address" type="text" placeholder="e.g. 5 Maple Ave, Sydney NSW 2000" /></div>
+        </div>
+      </div>
+
+      <!-- Second NOK -->
+      <div class="sub-section">
+        <div class="sub-label">👨‍👩‍👦 Second Next of Kin（第二亲属联系人，如有）</div>
+        <div class="grid-2">
+          <div class="field"><label>姓名 Name</label><input id="nok2Name" type="text" placeholder="e.g. Lisa Wang" /></div>
+          <div class="field"><label>关系 Relationship</label><input id="nok2Rel" type="text" placeholder="e.g. Daughter, Brother" /></div>
+          <div class="field"><label>电话 Phone</label><input id="nok2Phone" type="tel" placeholder="e.g. 0422 333 444" /></div>
+          <div class="field span-2"><label>住址 Address</label><input id="nok2Address" type="text" placeholder="e.g. 8 Oak St, Brisbane QLD 4000" /></div>
+        </div>
+      </div>
+
+      <!-- Guardianship -->
+      <div class="sub-section">
+        <div class="sub-label">🛡️ Guardianship（监护人信息，如适用）</div>
+        <div class="grid-2">
+          <div class="field"><label>监护人姓名 Guardian Name</label><input id="guardianName" type="text" placeholder="If applicable" /></div>
+          <div class="field"><label>监护类型 Guardianship Type</label>
+            <select id="guardianType">
+              <option value="">— Not applicable —</option>
+              <option value="legal">Legal Guardian 法定监护人</option>
+              <option value="enduring-poa">Enduring Power of Attorney</option>
+              <option value="medical-poa">Medical Power of Attorney</option>
+              <option value="court">Court-appointed Guardian</option>
+            </select>
+          </div>
+          <div class="field"><label>联系电话 Phone</label><input id="guardianPhone" type="tel" placeholder="Guardian phone" /></div>
+          <div class="field"><label>Email</label><input id="guardianEmail" type="email" placeholder="Guardian email" /></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 5. 医疗详细信息 -->
+  <div class="section-card" id="sec5">
+    <div class="section-header" onclick="toggleSection('sec5')">
+      <span class="s-icon">💊</span>
+      <span class="s-title">医疗详细信息 — Medical Providers</span>
+      <span class="s-subtitle">可选</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+
+      <!-- Pharmacy -->
+      <div class="sub-section">
+        <div class="sub-label">🏪 Pharmacy Details（药房详情）</div>
+        <div class="grid-2">
+          <div class="field"><label>药房名称 Pharmacy Name</label><input id="pharmacyName" type="text" placeholder="e.g. Priceline Pharmacy" /></div>
+          <div class="field"><label>电话 Phone</label><input id="pharmacyPhone" type="tel" placeholder="e.g. (03) 9000 1111" /></div>
+          <div class="field span-2"><label>地址 Address</label><input id="pharmacyAddress" type="text" placeholder="e.g. 100 Collins St, Melbourne VIC 3000" /></div>
+        </div>
+      </div>
+
+      <!-- GP -->
+      <div class="sub-section">
+        <div class="sub-label">🩺 GP / Doctor Details（全科医生）</div>
+        <div class="grid-2">
+          <div class="field"><label>医生姓名 Doctor Name</label><input id="gpName" type="text" placeholder="e.g. Dr. Emily White" /></div>
+          <div class="field"><label>诊所 Clinic / Practice</label><input id="gpClinic" type="text" placeholder="e.g. Fitzroy Family Medical" /></div>
+          <div class="field"><label>电话 Phone</label><input id="gpPhone" type="tel" placeholder="e.g. (03) 9123 4567" /></div>
+          <div class="field"><label>传真 Fax</label><input id="gpFax" type="tel" placeholder="e.g. (03) 9123 4568" /></div>
+          <div class="field span-2"><label>地址 Address</label><input id="gpAddress" type="text" placeholder="e.g. 200 Brunswick St, Fitzroy VIC 3065" /></div>
+        </div>
+      </div>
+
+      <!-- Specialist -->
+      <div class="sub-section">
+        <div class="sub-label">🔬 Specialist Details（专科医生）</div>
+        <div class="grid-2">
+          <div class="field"><label>医生姓名 Specialist Name</label><input id="specName" type="text" placeholder="e.g. Dr. Alan Park" /></div>
+          <div class="field"><label>专科 Specialty</label><input id="specArea" type="text" placeholder="e.g. Cardiology, Endocrinology" /></div>
+          <div class="field"><label>医院/诊所 Hospital / Clinic</label><input id="specClinic" type="text" placeholder="e.g. Royal Melbourne Hospital" /></div>
+          <div class="field"><label>电话 Phone</label><input id="specPhone" type="tel" placeholder="e.g. (03) 9342 7000" /></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Generate button -->
+  <button class="generate-btn" onclick="generateProfile()">📋 生成患者档案 &amp; 个性化问候语</button>
+
+  <!-- Result -->
+  <div class="result-card" id="resultCard">
+
+    <div class="result-header">
+      <div class="patient-name" id="rName"></div>
+      <div class="patient-meta" id="rMeta"></div>
+    </div>
+
+    <div class="greeting-box">
+      <div class="greeting-label">✨ 个性化问候语 Personalised Greeting</div>
+      <div class="greeting-text" id="rGreeting"></div>
+    </div>
+
+    <div class="result-sections">
+      <div class="r-block">
+        <div class="r-block-title">基本信息</div>
+        <div id="rBasic"></div>
+      </div>
+      <div class="r-block">
+        <div class="r-block-title">医疗背景</div>
+        <div id="rMedical"></div>
+      </div>
+      <div class="r-block">
+        <div class="r-block-title">联系人</div>
+        <div id="rContact"></div>
+      </div>
+      <div class="r-block">
+        <div class="r-block-title">紧急联系人</div>
+        <div id="rNOK"></div>
+      </div>
+      <div class="r-block wide">
+        <div class="r-block-title">医疗机构</div>
+        <div id="rProviders"></div>
+      </div>
+    </div>
+
+    <button class="print-btn" onclick="window.print()">🖨️ 打印档案 Print Profile</button>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+  // Toggle section collapse
+  function toggleSection(id) {
+    document.getElementById(id).classList.toggle('collapsed');
+  }
+
+  // Helper: read value safely
+  const val = id => (document.getElementById(id)?.value || '').trim();
+
+  // Build a result row
+  function row(key, value) {
+    if (!value) return '';
+    return `<div class="r-row"><span class="r-key">${key}</span><span class="r-val">${value}</span></div>`;
+  }
+
+  // ─── Greeting Generator ──────────────────────────────────────────────
+  function generateGreeting(name, age, gender, language, religion, pmh) {
+    const ageNum = parseInt(age) || 0;
+
+    // Title
+    const title = gender === 'male' ? 'Mr.' : gender === 'female' ? (ageNum >= 18 ? 'Ms.' : 'Miss') : '';
+    const fullTitle = title ? `${title} ${name}` : name;
+
+    // Age category note
+    const isPediatric = ageNum < 18;
+    const isGeriatric  = ageNum >= 70;
+
+    // PMH flag
+    const hasChronicCondition = pmh && pmh.length > 3;
+
+    // ── Language/Religion-based greeting ──
+    if (language === 'mandarin') {
+      const honorific = gender === 'male' ? '先生' : gender === 'female' ? '女士' : '';
+      let g = `您好，${name}${honorific}！欢迎您来就诊。`;
+      if (isPediatric) g = `您好！欢迎小朋友 ${name} 来就诊，我们会细心照顾。`;
+      else if (hasChronicCondition) g += `我们已了解您的既往病史，护理团队将为您提供全面、细致的照护，请放心。`;
+      else if (isGeriatric) g += `感谢您的信任，我们团队会确保您得到最贴心的护理。`;
+      else g += `如有任何不适，请随时告知我们的护理团队。`;
+      return g;
+    }
+
+    if (language === 'cantonese') {
+      const honorific = gender === 'male' ? '先生' : gender === 'female' ? '女士' : '';
+      let g = `你好，${name}${honorific}！歡迎嚟就診。`;
+      if (hasChronicCondition) g += `我哋已經睇咗你嘅病歷，護理團隊會好好照顧你。`;
+      return g;
+    }
+
+    if (language === 'arabic' || religion === 'muslim') {
+      let g = `As-salamu alaykum, ${fullTitle}. `;
+      if (isPediatric) g = `As-salamu alaykum! Welcome, young ${name}. `;
+      g += hasChronicCondition
+        ? `We are aware of your medical history and our team is here to provide you with the very best care. May your visit bring you comfort and good health, inshallah.`
+        : `We are honoured to care for you today. Please let our team know if there is anything we can do to support your comfort and wellbeing.`;
+      return g;
+    }
+
+    if (language === 'vietnamese') {
+      return `Xin chào ${name}! Chào mừng bạn đến với trung tâm y tế của chúng tôi. Đội ngũ y tế của chúng tôi sẵn sàng hỗ trợ bạn.`;
+    }
+
+    if (language === 'spanish') {
+      return `Bienvenido/a, ${fullTitle}. Estamos aquí para brindarle la mejor atención posible. No dude en comunicarse con nuestro equipo de enfermería.`;
+    }
+
+    if (language === 'hindi') {
+      return `नमस्ते ${name} जी! हमारे स्वास्थ्य केंद्र में आपका स्वागत है। हमारी टीम आपकी देखभाल के लिए तैयार है।`;
+    }
+
+    // ── Default English ──
+    // Religion-based opener
+    let opener = `Good day, ${fullTitle}.`;
+    if (religion === 'jewish')   opener = `Shalom, ${fullTitle}.`;
+    if (religion === 'buddhist') opener = `Welcome, ${fullTitle}.`;
+    if (religion === 'hindu')    opener = `Namaste, ${fullTitle}.`;
+
+    let body = '';
+    if (isPediatric) {
+      opener = `Hello, ${name}!`;
+      body = `Welcome to our clinic. We'll make sure you're comfortable and well looked after today.`;
+    } else if (isGeriatric) {
+      body = `Thank you for joining us today. We greatly appreciate your trust, and our nursing team will ensure you receive attentive, personalised care throughout your visit.`;
+    } else if (hasChronicCondition) {
+      body = `We have reviewed your medical background and our team is fully prepared to support your ongoing care needs. Please don't hesitate to let us know if you have any concerns.`;
+    } else {
+      body = `Welcome to our clinic. Our nursing team is here to support your health and wellbeing — please feel free to ask us anything during your visit.`;
+    }
+
+    // Religion addition
+    let closing = '';
+    if (religion === 'muslim')    closing = ' We will do our best to accommodate your needs and preferences.';
+    if (religion === 'christian') closing = ' We wish you a speedy and healthy recovery.';
+
+    return `${opener} ${body}${closing}`;
+  }
+  // ─────────────────────────────────────────────────────────────────────
+
+  function generateProfile() {
+    const name     = val('name');
+    const age      = val('age');
+    const gender   = val('gender');
+    const language = val('language');
+    const religion = val('religion');
+    const pmh      = val('pmh');
+
+    if (!name || !age) {
+      alert('请填写患者姓名和年龄（必填项）');
+      return;
+    }
+
+    // Header
+    const genderLabel = { male:'Male 男', female:'Female 女', other:'Non-binary / Other' }[gender] || '—';
+    document.getElementById('rName').textContent = name;
+    document.getElementById('rMeta').textContent =
+      `Age ${age}  ·  ${genderLabel}  ·  ${val('language') || ''}  ·  ${val('religion') || ''}`;
+
+    // Greeting
+    document.getElementById('rGreeting').textContent =
+      generateGreeting(name, age, gender, language, religion, pmh);
+
+    // Basic info block
+    document.getElementById('rBasic').innerHTML =
+      row('年龄 Age',     age + ' yrs') +
+      row('性别 Gender',  genderLabel) +
+      row('语言 Language', language) +
+      row('宗教 Religion', religion !== 'none' ? religion : '—') +
+      row('电话 Phone',   val('phone')) +
+      row('Email',        val('email')) +
+      row('住址 Address', val('address'));
+
+    // Medical block
+    const lastVisit = val('lastVisit') || '—';
+    const nextVisit = val('nextVisit') || '—';
+    document.getElementById('rMedical').innerHTML =
+      row('PMH',          pmh || '—') +
+      row('Allergies',    val('allergies') || 'NKDA') +
+      row('Medications',  val('medications') || '—') +
+      row('Last Visit',   lastVisit) +
+      row('Next Appt',    nextVisit);
+
+    // Contact block
+    document.getElementById('rContact').innerHTML =
+      row('Name',     val('contactName')) +
+      row('Relation', val('contactRel')) +
+      row('Phone',    val('contactPhone')) +
+      row('Email',    val('contactEmail')) +
+      row('Address',  val('contactAddress'));
+
+    // NOK block
+    let nokHtml = '';
+    if (val('nok1Name')) {
+      nokHtml += `<div style="font-size:0.78rem;font-weight:700;color:#dfa0c0;margin:8px 0 4px;">1st NOK</div>`;
+      nokHtml += row('Name',  val('nok1Name')) + row('Rel', val('nok1Rel')) + row('Phone', val('nok1Phone'));
+    }
+    if (val('nok2Name')) {
+      nokHtml += `<div style="font-size:0.78rem;font-weight:700;color:#dfa0c0;margin:8px 0 4px;">2nd NOK</div>`;
+      nokHtml += row('Name', val('nok2Name')) + row('Rel', val('nok2Rel')) + row('Phone', val('nok2Phone'));
+    }
+    if (val('guardianName')) {
+      nokHtml += `<div style="font-size:0.78rem;font-weight:700;color:#dfa0c0;margin:8px 0 4px;">Guardian</div>`;
+      nokHtml += row('Name', val('guardianName')) + row('Type', val('guardianType')) + row('Phone', val('guardianPhone'));
+    }
+    document.getElementById('rNOK').innerHTML = nokHtml || '<div style="color:#bbb;font-size:0.9rem;">Not provided</div>';
+
+    // Providers block
+    let provHtml = '';
+    if (val('pharmacyName')) {
+      provHtml += `<div style="font-size:0.78rem;font-weight:700;color:#dfa0c0;margin:0 0 4px;">Pharmacy</div>`;
+      provHtml += row('Name',    val('pharmacyName')) + row('Phone', val('pharmacyPhone')) + row('Address', val('pharmacyAddress'));
+    }
+    if (val('gpName')) {
+      provHtml += `<div style="font-size:0.78rem;font-weight:700;color:#dfa0c0;margin:8px 0 4px;">GP / Doctor</div>`;
+      provHtml += row('Name',   val('gpName')) + row('Clinic', val('gpClinic')) + row('Phone', val('gpPhone'));
+    }
+    if (val('specName')) {
+      provHtml += `<div style="font-size:0.78rem;font-weight:700;color:#dfa0c0;margin:8px 0 4px;">Specialist</div>`;
+      provHtml += row('Name',      val('specName')) + row('Specialty', val('specArea')) + row('Phone', val('specPhone'));
+    }
+    document.getElementById('rProviders').innerHTML = provHtml || '<div style="color:#bbb;font-size:0.9rem;">Not provided</div>';
+
+    // Show & scroll
+    const card = document.getElementById('resultCard');
+    card.classList.add('show');
+    setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  }
+</script>
+</body>
+</html>

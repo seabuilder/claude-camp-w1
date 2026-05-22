@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>健康评估系统 — BMI & 健康风险</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #faf6f3 0%, #f5ede5 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+    }
+    .back-link {
+      color: #dfa0c0;
+      text-decoration: none;
+      font-weight: 600;
+      margin-bottom: 24px;
+      display: inline-block;
+    }
+    .back-link:hover { color: #d47fa0; }
+    h1 { color: #d47fa0; margin-bottom: 8px; font-size: 2rem; }
+    .subtitle { color: #9b9b9b; margin-bottom: 32px; font-size: 0.95rem; }
+
+    .toggle-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .toggle-btn {
+      flex: 1;
+      min-width: 100px;
+      padding: 10px 14px;
+      border: 2px solid #e8b4cc;
+      border-radius: 20px;
+      background: white;
+      color: #9b9b9b;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-align: center;
+    }
+    .toggle-btn.active {
+      background: linear-gradient(135deg, #e8b4cc 0%, #dfa0c0 100%);
+      color: white;
+      border-color: #dfa0c0;
+      box-shadow: 0 4px 12px rgba(223,160,192,0.3);
+    }
+    .toggle-btn:hover { border-color: #dfa0c0; transform: translateY(-1px); }
+
+    .form-group { margin-bottom: 20px; }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #2d2d2d;
+      font-size: 0.95rem;
+    }
+    .label-hint { font-weight: 400; color: #9b9b9b; font-size: 0.85rem; margin-left: 6px; }
+
+    input[type="number"], select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e8b4cc;
+      border-radius: 12px;
+      font-size: 1rem;
+      transition: all 0.3s;
+      background: white;
+    }
+    input[type="number"]:focus, select:focus {
+      outline: none;
+      border-color: #dfa0c0;
+      box-shadow: 0 0 0 3px rgba(223,160,192,0.1);
+    }
+    .row2 { display: flex; gap: 12px; }
+    .row2 .form-group { flex: 1; }
+
+    .button {
+      background: linear-gradient(135deg, #e8b4cc 0%, #dfa0c0 100%);
+      color: white;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 20px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.3s;
+      margin-top: 8px;
+    }
+    .button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(232,180,204,0.3);
+    }
+
+    .result {
+      background: linear-gradient(135deg, #fff9fb 0%, #fff2f8 100%);
+      border-radius: 16px;
+      padding: 28px;
+      margin-top: 28px;
+      border-left: 4px solid #dfa0c0;
+      display: none;
+    }
+    .result.show { display: block; animation: slideIn 0.4s ease; }
+    @keyframes slideIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+    .bmi-display {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .bmi-number {
+      font-size: 3.2rem;
+      font-weight: 800;
+      color: #d47fa0;
+      line-height: 1;
+    }
+    .bmi-unit { font-size: 1rem; color: #9b9b9b; margin-bottom: 8px; }
+
+    .status-badge {
+      display: inline-block;
+      padding: 8px 18px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 20px;
+    }
+    .s-underweight { background: #e3f2fd; color: #1565c0; }
+    .s-normal      { background: #e8f5e9; color: #2e7d32; }
+    .s-overweight  { background: #fff3e0; color: #e65100; }
+    .s-obese1      { background: #fbe9e7; color: #bf360c; }
+    .s-obese2      { background: #ffebee; color: #b71c1c; }
+    .s-obese3      { background: #fce4ec; color: #880e4f; }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .info-box {
+      background: white;
+      border-radius: 12px;
+      padding: 14px;
+      border: 1px solid rgba(232,180,204,0.3);
+    }
+    .info-box-label { font-size: 0.8rem; color: #9b9b9b; margin-bottom: 4px; }
+    .info-box-value { font-size: 1.1rem; font-weight: 700; color: #2d2d2d; }
+
+    .scale-wrap { margin-bottom: 20px; }
+    .scale-label-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: #9b9b9b;
+      margin-bottom: 4px;
+    }
+    .scale-bar {
+      height: 10px;
+      border-radius: 8px;
+      background: linear-gradient(to right,
+        #90caf9 0%, #90caf9 14.5%,
+        #66bb6a 14.5%, #66bb6a 35.5%,
+        #ffa726 35.5%, #ffa726 51.6%,
+        #ef5350 51.6%, #ef5350 67.7%,
+        #c62828 67.7%, #c62828 83.9%,
+        #880e4f 83.9%, #880e4f 100%
+      );
+      position: relative;
+    }
+    .scale-marker {
+      position: absolute;
+      top: -4px;
+      width: 4px;
+      height: 18px;
+      background: #2d2d2d;
+      border-radius: 2px;
+      transform: translateX(-50%);
+      transition: left 0.5s ease;
+    }
+
+    .waist-section {
+      border-top: 1px solid rgba(232,180,204,0.3);
+      padding-top: 16px;
+      margin-top: 4px;
+    }
+    .waist-section h3 { font-size: 1rem; color: #d47fa0; margin-bottom: 12px; }
+
+    .class-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin-top: 12px; }
+    .class-table th {
+      background: linear-gradient(135deg, #e8b4cc 0%, #dfa0c0 100%);
+      color: white;
+      padding: 10px 12px;
+      text-align: left;
+    }
+    .class-table td { padding: 8px 12px; border-bottom: 1px solid #f5ede5; color: #2d2d2d; }
+    .class-table tr.highlighted td { background: rgba(232,180,204,0.2); font-weight: 700; }
+    .class-table tr:last-child td { border-bottom: none; }
+
+    .advice-box {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+      border: 1px solid rgba(232,180,204,0.3);
+    }
+    .advice-box h4 { color: #d47fa0; margin-bottom: 8px; font-size: 0.95rem; }
+    .advice-box ul { padding-left: 18px; }
+    .advice-box li { font-size: 0.88rem; color: #444; line-height: 1.8; }
+
+    .section-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: #9b9b9b;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .peds-note {
+      background: #fff8e1;
+      border-left: 4px solid #ffc107;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-top: 16px;
+      font-size: 0.88rem;
+      color: #5d4037;
+      line-height: 1.6;
+    }
+    .peds-note strong { display: block; margin-bottom: 4px; color: #e65100; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <a href="index.html" class="back-link">← 返回首页</a>
+  <h1>❤️ 健康评估系统</h1>
+  <p class="subtitle">BMI 计算、体重分级与健康风险评估</p>
+
+  <div class="section-title">患者类型</div>
+  <div class="toggle-group" id="typeToggle">
+    <button class="toggle-btn active" onclick="setType('adult')">成人 Adult (≥18岁)</button>
+    <button class="toggle-btn"        onclick="setType('pediatric')">儿童 Pediatric (2–17岁)</button>
+  </div>
+
+  <div class="section-title">单位制</div>
+  <div class="toggle-group" id="unitToggle">
+    <button class="toggle-btn active" onclick="setUnit('metric')">公制 Metric (kg / cm)</button>
+    <button class="toggle-btn"        onclick="setUnit('imperial')">英制 Imperial (lb / ft·in)</button>
+  </div>
+
+  <div class="form-group" id="sexGroup">
+    <label>生理性别 <span class="label-hint">（用于腰围风险评估）</span></label>
+    <select id="sex">
+      <option value="female">Female 女</option>
+      <option value="male">Male 男</option>
+    </select>
+  </div>
+
+  <div class="form-group" id="ageGroup" style="display:none">
+    <label>年龄 Age <span class="label-hint">（2–17岁）</span></label>
+    <input type="number" id="ageInput" min="2" max="17" step="1" placeholder="例：8" />
+  </div>
+
+  <div class="form-group" id="heightMetric">
+    <label>身高 Height (cm)</label>
+    <input type="number" id="heightCm" min="50" max="250" step="0.1" placeholder="例：165" />
+  </div>
+
+  <div class="row2" id="heightImperial" style="display:none">
+    <div class="form-group">
+      <label>身高 ft</label>
+      <input type="number" id="heightFt" min="1" max="8" step="1" placeholder="例：5" />
+    </div>
+    <div class="form-group">
+      <label>身高 in</label>
+      <input type="number" id="heightIn" min="0" max="11" step="0.5" placeholder="例：5" />
+    </div>
+  </div>
+
+  <div class="form-group" id="weightMetric">
+    <label>体重 Weight (kg)</label>
+    <input type="number" id="weightKg" min="1" max="300" step="0.1" placeholder="例：65" />
+  </div>
+
+  <div class="form-group" id="weightImperial" style="display:none">
+    <label>体重 Weight (lb)</label>
+    <input type="number" id="weightLb" min="2" max="660" step="0.5" placeholder="例：143" />
+  </div>
+
+  <div class="form-group" id="waistGroup">
+    <label>腰围 Waist Circumference (cm) <span class="label-hint">选填 optional</span></label>
+    <input type="number" id="waistCm" min="30" max="200" step="0.5" placeholder="例：80（不填则跳过腰围评估）" />
+  </div>
+
+  <button class="button" onclick="calculate()">计算 &amp; 评估</button>
+
+  <div class="result" id="result">
+
+    <div class="section-title" style="margin-bottom:16px">BMI 结果</div>
+
+    <div class="bmi-display">
+      <div class="bmi-number" id="bmiValue">—</div>
+      <div class="bmi-unit">kg/m²</div>
+    </div>
+    <div class="status-badge" id="statusBadge"></div>
+
+    <div class="scale-wrap">
+      <div class="scale-label-row">
+        <span>偏瘦</span><span>正常</span><span>超重</span><span>肥胖Ⅰ</span><span>肥胖Ⅱ</span><span>肥胖Ⅲ</span>
+      </div>
+      <div class="scale-bar"><div class="scale-marker" id="scaleMarker"></div></div>
+      <div class="scale-label-row" style="margin-top:4px">
+        <span>14</span><span>18.5</span><span>25</span><span>30</span><span>35</span><span>40+</span>
+      </div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-box">
+        <div class="info-box-label">身高 Height</div>
+        <div class="info-box-value" id="dispHeight">—</div>
+      </div>
+      <div class="info-box">
+        <div class="info-box-label">体重 Weight</div>
+        <div class="info-box-value" id="dispWeight">—</div>
+      </div>
+      <div class="info-box">
+        <div class="info-box-label">健康体重范围 Healthy Range</div>
+        <div class="info-box-value" id="dispHealthyRange">—</div>
+      </div>
+      <div class="info-box">
+        <div class="info-box-label">距健康体重 Distance</div>
+        <div class="info-box-value" id="dispDistance">—</div>
+      </div>
+    </div>
+
+    <div id="waistResult" style="display:none">
+      <div class="waist-section">
+        <h3>腰围健康风险</h3>
+        <div class="status-badge" id="waistBadge"></div>
+        <p id="waistDesc" style="font-size:0.88rem;color:#555;margin-top:10px;line-height:1.6"></p>
+      </div>
+    </div>
+
+    <div id="pedsNote" class="peds-note" style="display:none">
+      <strong>⚠️ 儿童 BMI 说明 Pediatric BMI Note</strong>
+      儿童 BMI 需结合年龄和性别百分位数（percentile）解读，本工具仅提供参考计算值。临床评估应使用 CDC 或 WHO 儿童 BMI-for-age 生长曲线图，请结合医生专业判断。
+    </div>
+
+    <div class="advice-box" id="adviceBox">
+      <h4>💡 健康建议 Clinical Advice</h4>
+      <ul id="adviceList"></ul>
+    </div>
+
+    <div class="section-title" style="margin-top:24px;margin-bottom:10px">BMI 分级参考 (WHO / Australian)</div>
+    <table class="class-table">
+      <thead>
+        <tr>
+          <th>分级 Classification</th>
+          <th>BMI 范围</th>
+          <th>健康风险</th>
+        </tr>
+      </thead>
+      <tbody id="classBody"></tbody>
+    </table>
+
+  </div>
+</div>
+
+<script>
+  let patientType = 'adult';
+  let unitSystem  = 'metric';
+
+  function setType(t) {
+    patientType = t;
+    document.querySelectorAll('#typeToggle .toggle-btn').forEach((b, i) =>
+      b.classList.toggle('active', i === (t === 'adult' ? 0 : 1)));
+    document.getElementById('ageGroup').style.display   = t === 'pediatric' ? '' : 'none';
+    document.getElementById('waistGroup').style.display = t === 'adult' ? '' : 'none';
+    document.getElementById('result').classList.remove('show');
+  }
+
+  function setUnit(u) {
+    unitSystem = u;
+    document.querySelectorAll('#unitToggle .toggle-btn').forEach((b, i) =>
+      b.classList.toggle('active', i === (u === 'metric' ? 0 : 1)));
+    document.getElementById('heightMetric').style.display   = u === 'metric' ? '' : 'none';
+    document.getElementById('heightImperial').style.display = u === 'imperial' ? '' : 'none';
+    document.getElementById('weightMetric').style.display   = u === 'metric' ? '' : 'none';
+    document.getElementById('weightImperial').style.display = u === 'imperial' ? '' : 'none';
+    document.getElementById('result').classList.remove('show');
+  }
+
+  function getHeightM() {
+    if (unitSystem === 'metric') {
+      const cm = parseFloat(document.getElementById('heightCm').value);
+      return isNaN(cm) ? null : cm / 100;
+    }
+    const ft  = parseFloat(document.getElementById('heightFt').value) || 0;
+    const inc = parseFloat(document.getElementById('heightIn').value) || 0;
+    const totalIn = ft * 12 + inc;
+    return totalIn > 0 ? totalIn * 0.0254 : null;
+  }
+
+  function getWeightKg() {
+    if (unitSystem === 'metric') {
+      const kg = parseFloat(document.getElementById('weightKg').value);
+      return isNaN(kg) ? null : kg;
+    }
+    const lb = parseFloat(document.getElementById('weightLb').value);
+    return isNaN(lb) ? null : lb * 0.453592;
+  }
+
+  function calculate() {
+    const hM  = getHeightM();
+    const wKg = getWeightKg();
+
+    if (!hM  || hM  < 0.5 || hM  > 2.5) { alert('请输入有效的身高'); return; }
+    if (!wKg || wKg < 1   || wKg > 400)  { alert('请输入有效的体重'); return; }
+
+    if (patientType === 'pediatric') {
+      const age = parseFloat(document.getElementById('ageInput').value);
+      if (isNaN(age) || age < 2 || age > 17) { alert('儿童年龄请输入 2–17 岁'); return; }
+    }
+
+    const bmi  = wKg / (hM * hM);
+    const cat  = classifyBMI(bmi);
+    const minHW = 18.5 * hM * hM;
+    const maxHW = 24.9 * hM * hM;
+
+    let distanceStr;
+    if      (bmi < 18.5) distanceStr = '需增重 +' + (minHW - wKg).toFixed(1) + ' kg';
+    else if (bmi > 24.9) distanceStr = '需减重 −' + (wKg - maxHW).toFixed(1) + ' kg';
+    else                 distanceStr = '✓ 在健康范围内';
+
+    document.getElementById('bmiValue').textContent = bmi.toFixed(1);
+    const badge = document.getElementById('statusBadge');
+    badge.textContent = cat.cn + ' (' + cat.en + ')';
+    badge.className   = 'status-badge ' + cat.cls;
+
+    // Scale bar: clamp BMI to 14–45, map to 0–100%
+    const clampedBMI = Math.min(Math.max(bmi, 14), 45);
+    const pct = ((clampedBMI - 14) / (45 - 14)) * 100;
+    document.getElementById('scaleMarker').style.left = pct + '%';
+
+    if (unitSystem === 'metric') {
+      document.getElementById('dispHeight').textContent      = (hM * 100).toFixed(1) + ' cm';
+      document.getElementById('dispWeight').textContent      = wKg.toFixed(1) + ' kg';
+      document.getElementById('dispHealthyRange').textContent = minHW.toFixed(1) + '–' + maxHW.toFixed(1) + ' kg';
+    } else {
+      const hIn  = hM / 0.0254;
+      const hFtD = Math.floor(hIn / 12);
+      const hInR = (hIn % 12).toFixed(1);
+      document.getElementById('dispHeight').textContent      = hFtD + ' ft ' + hInR + ' in';
+      document.getElementById('dispWeight').textContent      = (wKg / 0.453592).toFixed(1) + ' lb';
+      document.getElementById('dispHealthyRange').textContent =
+        (minHW / 0.453592).toFixed(1) + '–' + (maxHW / 0.453592).toFixed(1) + ' lb';
+    }
+    document.getElementById('dispDistance').textContent = distanceStr;
+
+    // Waist
+    const waistCm  = parseFloat(document.getElementById('waistCm').value);
+    const waistDiv = document.getElementById('waistResult');
+    if (!isNaN(waistCm) && waistCm > 0 && patientType === 'adult') {
+      const sex = document.getElementById('sex').value;
+      const wr  = assessWaist(waistCm, sex);
+      const wb  = document.getElementById('waistBadge');
+      wb.textContent = wr.label;
+      wb.className   = 'status-badge ' + wr.cls;
+      document.getElementById('waistDesc').textContent = wr.desc;
+      waistDiv.style.display = '';
+    } else {
+      waistDiv.style.display = 'none';
+    }
+
+    document.getElementById('pedsNote').style.display = patientType === 'pediatric' ? '' : 'none';
+
+    document.getElementById('adviceList').innerHTML =
+      cat.advice.map(a => '<li>' + a + '</li>').join('');
+
+    renderTable(bmi);
+
+    document.getElementById('result').classList.add('show');
+  }
+
+  const CATEGORIES = [
+    {
+      min: 0,   max: 18.5, cn: '体重偏轻', en: 'Underweight',    cls: 's-underweight',
+      advice: [
+        '建议咨询营养师制定增重计划',
+        '增加富含蛋白质、健康脂肪的食物摄入',
+        '排查潜在疾病（如甲状腺功能亢进、贫血等）',
+        '监测骨密度，预防骨质疏松',
+        '定期随访，目标 BMI 18.5 以上',
+      ]
+    },
+    {
+      min: 18.5, max: 25,  cn: '体重正常', en: 'Normal Weight',  cls: 's-normal',
+      advice: [
+        '维持当前健康的饮食和运动习惯',
+        '每周至少 150 分钟中等强度有氧运动',
+        '定期健康体检，持续监测体重变化',
+        '保持均衡饮食，五大食物类别合理搭配',
+      ]
+    },
+    {
+      min: 25,  max: 30,  cn: '超重',     en: 'Overweight',      cls: 's-overweight',
+      advice: [
+        '建议通过调整饮食和增加运动逐步减重',
+        '目标：6–12 个月内减重 5–10%',
+        '减少高糖、高饱和脂肪食物摄入',
+        '每周 150–300 分钟有氧运动',
+        '监测血压、血糖、血脂，预防代谢综合征',
+      ]
+    },
+    {
+      min: 30,  max: 35,  cn: '肥胖（I 级）',  en: 'Obese Class I',  cls: 's-obese1',
+      advice: [
+        '建议在医生指导下制定减重计划',
+        '评估糖尿病、高血压、心血管疾病风险',
+        '考虑由营养师、运动生理学家组成多学科支持团队',
+        '目标：减重 ≥5% 可显著改善代谢指标',
+        '监测空腹血糖、HbA1c、血脂谱',
+      ]
+    },
+    {
+      min: 35,  max: 40,  cn: '肥胖（II 级）', en: 'Obese Class II', cls: 's-obese2',
+      advice: [
+        '建议尽快就医进行全面评估',
+        '评估睡眠呼吸暂停（Sleep Apnoea）风险',
+        '可能符合减重手术（Bariatric Surgery）评估标准',
+        '严格监测心血管相关指标',
+        '心理健康支持同样重要',
+      ]
+    },
+    {
+      min: 40,  max: Infinity, cn: '肥胖（III 级）', en: 'Obese Class III', cls: 's-obese3',
+      advice: [
+        '需立即转介专科减重医疗团队',
+        '评估减重手术适应证（BMI ≥40 通常符合手术标准）',
+        '高风险合并症：2型糖尿病、心衰、关节病变、OSA',
+        '需多学科团队（医生、营养师、心理医生）综合干预',
+        '手术前后需严格医学随访',
+      ]
+    },
+  ];
+
+  function classifyBMI(bmi) {
+    return CATEGORIES.find(c => bmi >= c.min && bmi < c.max) || CATEGORIES[CATEGORIES.length - 1];
+  }
+
+  function assessWaist(cm, sex) {
+    if (sex === 'female') {
+      if (cm < 80) return { label: '低风险 Low Risk',    cls: 's-normal',    desc: '女性腰围 ' + cm + ' cm，低于 80 cm 警戒线，心血管代谢风险较低。' };
+      if (cm < 88) return { label: '增加风险 Increased', cls: 's-overweight', desc: '女性腰围 ' + cm + ' cm（建议值 <80 cm），有增加的代谢风险，建议关注饮食和运动。' };
+      return             { label: '高风险 High Risk',    cls: 's-obese1',    desc: '女性腰围 ' + cm + ' cm，超过 88 cm 高风险线，显著增加 2 型糖尿病和心血管疾病风险，建议就医评估。' };
+    } else {
+      if (cm < 94)  return { label: '低风险 Low Risk',    cls: 's-normal',    desc: '男性腰围 ' + cm + ' cm，低于 94 cm 警戒线，心血管代谢风险较低。' };
+      if (cm < 102) return { label: '增加风险 Increased', cls: 's-overweight', desc: '男性腰围 ' + cm + ' cm（建议值 <94 cm），有增加的代谢风险，建议关注饮食和运动。' };
+      return              { label: '高风险 High Risk',    cls: 's-obese1',    desc: '男性腰围 ' + cm + ' cm，超过 102 cm 高风险线，显著增加 2 型糖尿病和心血管疾病风险，建议就医评估。' };
+    }
+  }
+
+  function renderTable(currentBMI) {
+    const rows = [
+      ['体重偏轻 Underweight', '< 18.5',   '较高（营养不良相关）'],
+      ['正常体重 Normal',      '18.5–24.9', '最低'],
+      ['超重 Overweight',      '25–29.9',   '中等'],
+      ['肥胖 I 级',            '30–34.9',   '高'],
+      ['肥胖 II 级',           '35–39.9',   '很高'],
+      ['肥胖 III 级',          '≥ 40',      '极高'],
+    ];
+    let rowIdx;
+    if      (currentBMI < 18.5) rowIdx = 0;
+    else if (currentBMI < 25)   rowIdx = 1;
+    else if (currentBMI < 30)   rowIdx = 2;
+    else if (currentBMI < 35)   rowIdx = 3;
+    else if (currentBMI < 40)   rowIdx = 4;
+    else                         rowIdx = 5;
+
+    document.getElementById('classBody').innerHTML = rows.map((r, i) =>
+      '<tr class="' + (i === rowIdx ? 'highlighted' : '') + '">' +
+        '<td>' + r[0] + (i === rowIdx ? ' ◀ 您的位置' : '') + '</td>' +
+        '<td>' + r[1] + '</td>' +
+        '<td>' + r[2] + '</td>' +
+      '</tr>'
+    ).join('');
+  }
+
+  document.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') calculate();
+  });
+</script>
+</body>
+</html>

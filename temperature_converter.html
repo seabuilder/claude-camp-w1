@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>患者体温转换工具</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #faf6f3 0%, #f5ede5 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+    }
+    .back-link {
+      color: #dfa0c0;
+      text-decoration: none;
+      font-weight: 600;
+      margin-bottom: 24px;
+      display: inline-block;
+    }
+    .back-link:hover { color: #d47fa0; }
+    h1 { color: #d47fa0; margin-bottom: 8px; font-size: 2rem; }
+    .subtitle { color: #9b9b9b; margin-bottom: 32px; font-size: 0.95rem; }
+    .form-group {
+      margin-bottom: 24px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #2d2d2d;
+    }
+    .direction-toggle {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .direction-btn {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #e8b4cc;
+      border-radius: 20px;
+      background: white;
+      color: #9b9b9b;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .direction-btn.active {
+      background: linear-gradient(135deg, #e8b4cc 0%, #dfa0c0 100%);
+      color: white;
+      border-color: #dfa0c0;
+      box-shadow: 0 4px 12px rgba(223, 160, 192, 0.3);
+    }
+    .direction-btn:hover {
+      border-color: #dfa0c0;
+      transform: translateY(-2px);
+    }
+    select, input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e8b4cc;
+      border-radius: 12px;
+      font-size: 1rem;
+      transition: all 0.3s;
+    }
+    select:focus, input:focus {
+      outline: none;
+      border-color: #dfa0c0;
+      box-shadow: 0 0 0 3px rgba(223, 160, 192, 0.1);
+    }
+    .button {
+      background: linear-gradient(135deg, #e8b4cc 0%, #dfa0c0 100%);
+      color: white;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 20px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.3s;
+    }
+    .button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(232, 180, 204, 0.3);
+    }
+    .result {
+      background: linear-gradient(135deg, #fff9fb 0%, #fff2f8 100%);
+      border-radius: 16px;
+      padding: 24px;
+      margin-top: 24px;
+      border-left: 4px solid #dfa0c0;
+      display: none;
+    }
+    .result.show { display: block; animation: slideIn 0.4s ease; }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .result-label { color: #9b9b9b; font-size: 0.9rem; margin-bottom: 4px; }
+    .result-value { font-size: 1.6rem; font-weight: 800; color: #d47fa0; margin-bottom: 16px; }
+    .status-tag {
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .status-normal { background: #e8f5e9; color: #2e7d32; }
+    .status-warning { background: #fff3e0; color: #f57c00; }
+    .status-danger { background: #ffebee; color: #c62828; }
+    .warning-alert {
+      background: #ffebee;
+      border-left: 4px solid #c62828;
+      padding: 16px;
+      border-radius: 8px;
+      margin-top: 12px;
+      color: #c62828;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="index.html" class="back-link">← 返回首页</a>
+    <h1>🌡️ 患者体温转换</h1>
+    <p class="subtitle">输入体温数据，自动转换并识别是否异常</p>
+
+    <div class="direction-toggle">
+      <button class="direction-btn active" id="btn-cf" onclick="setMode('cf')">摄氏 → 华氏</button>
+      <button class="direction-btn"        id="btn-fc" onclick="setMode('fc')">华氏 → 摄氏</button>
+    </div>
+
+    <div class="form-group">
+      <label>患者类型</label>
+      <select id="patientType">
+        <option value="adult">成人 (Adult)</option>
+        <option value="pediatric">小孩 (Pediatric)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label id="tempLabel">体温 (摄氏度 °C)</label>
+      <input type="number" id="tempInput" placeholder="输入体温，如 37.5" step="0.1" />
+    </div>
+
+    <button class="button" onclick="convertTemp()">转换 & 诊断</button>
+
+    <div class="result" id="result">
+      <div class="result-label">转换结果</div>
+      <div class="result-value" id="tempResult"></div>
+      <div class="result-label">健康状态</div>
+      <div class="status-tag" id="statusTag"></div>
+      <div id="warningAlert"></div>
+    </div>
+  </div>
+
+  <script>
+    let mode = 'cf'; // 'cf' = Celsius→Fahrenheit, 'fc' = Fahrenheit→Celsius
+
+    function setMode(m) {
+      mode = m;
+      document.getElementById('btn-cf').classList.toggle('active', m === 'cf');
+      document.getElementById('btn-fc').classList.toggle('active', m === 'fc');
+      document.getElementById('tempLabel').textContent = m === 'cf' ? '体温 (摄氏度 °C)' : '体温 (华氏度 °F)';
+      document.getElementById('tempInput').placeholder  = m === 'cf' ? '输入体温，如 37.5' : '输入体温，如 98.6';
+      document.getElementById('tempInput').value = '';
+      document.getElementById('result').classList.remove('show');
+      document.getElementById('tempInput').focus();
+    }
+
+    function convertTemp() {
+      const input = parseFloat(document.getElementById('tempInput').value);
+      const type  = document.getElementById('patientType').value;
+
+      if (isNaN(input)) { alert('请输入有效的体温数值'); return; }
+
+      // Always work in Celsius for status check
+      const tempC      = mode === 'cf' ? input : (input - 32) * 5 / 9;
+      const converted  = mode === 'cf'
+        ? (input * 9 / 5 + 32).toFixed(1) + '°F'
+        : tempC.toFixed(1) + '°C';
+      const fromUnit   = mode === 'cf' ? '°C' : '°F';
+
+      let status, statusCn, warningMsg = '';
+      let statusClass = 'status-normal';
+
+      if (type === 'adult') {
+        if (tempC < 37.5)      { status = 'Normal';          statusCn = '正常'; }
+        else if (tempC < 38.5) { status = 'Fever';           statusCn = '发热';     statusClass = 'status-warning'; }
+        else if (tempC < 39)   { status = 'Moderate Fever';  statusCn = '中度发热'; statusClass = 'status-warning'; }
+        else if (tempC < 40)   { status = 'High Fever';      statusCn = '高热';     statusClass = 'status-danger'; warningMsg = '⚠️ 危险线：建议立即就医'; }
+        else                   { status = 'Critical';         statusCn = '严重高烧'; statusClass = 'status-danger'; warningMsg = '🚨 紧急警告：需要立即医疗干预'; }
+      } else {
+        if (tempC < 37)        { status = 'Normal';    statusCn = '正常'; }
+        else if (tempC < 38)   { status = 'Low Fever'; statusCn = '低烧';     statusClass = 'status-warning'; }
+        else if (tempC < 39)   { status = 'Fever';     statusCn = '发热';     statusClass = 'status-danger'; warningMsg = '⚠️ 危险线：建议尽快就医'; }
+        else                   { status = 'Critical';  statusCn = '严重发热'; statusClass = 'status-danger'; warningMsg = '🚨 紧急警告：需要立即医疗干预'; }
+      }
+
+      document.getElementById('tempResult').textContent = `${input}${fromUnit} = ${converted}`;
+      const statusTag = document.getElementById('statusTag');
+      statusTag.textContent = `${statusCn} (${status})`;
+      statusTag.className   = 'status-tag ' + statusClass;
+      document.getElementById('warningAlert').innerHTML = warningMsg
+        ? `<div class="warning-alert">${warningMsg}</div>` : '';
+      document.getElementById('result').classList.add('show');
+    }
+
+    document.getElementById('tempInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') convertTemp();
+    });
+  </script>
+</body>
+</html>
